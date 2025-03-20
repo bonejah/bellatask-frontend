@@ -1,0 +1,89 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+/* src/index.css */
+.login-container {
+  width: 300px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.login-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.login-container form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-container form div {
+  margin-bottom: 10px;
+}
+
+.login-container form button {
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.login-container form button:hover {
+  background-color: #0056b3;
+}
+
+.lists-container {
+  display: flex;
+  flex-wrap: nowrap; /* Não quebra as listas para a próxima linha */
+  gap: 16px; /* Espaçamento entre as listas */
+  overflow-x: auto; /* Permite o scroll horizontal */
+  padding-bottom: 16px; /* Padding para o scroll */
+  justify-content: flex-start; /* Alinha as listas à esquerda */
+  width: 100%;
+}
+
+.card {
+  flex-shrink: 0; /* Impede que os cards encolham */
+  width: 250px; /* Largura fixa para cada card */
+}
+
+.card-body {
+  padding: 10px;
+}
+
+@media (max-width: 768px) {
+  .card {
+    flex-basis: 100%; /* Em telas pequenas, as listas ocupam toda a largura disponível */
+  }
+}
+
+@media (max-width: 992px) {
+  .card {
+    flex-basis: calc(50% - 16px); /* Em telas médias, duas listas por linha */
+  }
+}
+
+@media (min-width: 992px) {
+  .card {
+    flex-basis: calc(
+      25% - 16px
+    ); /* Em telas grandes, quatro listas por linha */
+  }
+}
