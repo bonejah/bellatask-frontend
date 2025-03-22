@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { FaPlus, FaEdit, FaTrash } from "react-icons/fa"
+import {
+  FaEdit as FaEditIcon,
+  FaPlus as FaPlusIcon,
+  FaTrash as FaTrashIcon,
+} from "react-icons/fa"
+
 import {
   getBoardsByUserId,
   getProfile,
@@ -198,14 +203,14 @@ const BoardList = () => {
                         style={{ padding: "0.5rem", marginRight: "10px" }}
                         onClick={(e) => handleEditBoard(e, board)}
                       >
-                        <FaEdit />
+                        <FaEditIcon size={16} />
                       </button>
                       <button
                         className="btn btn-danger"
                         style={{ padding: "0.5rem" }}
                         onClick={(e) => handleDeleteBoard(e, board)}
                       >
-                        <FaTrash />
+                        <FaTrashIcon size={16} />
                       </button>
                     </div>
                   </div>
@@ -220,7 +225,7 @@ const BoardList = () => {
 
       <div className="text-center mt-4">
         <button className="btn btn-success" onClick={() => setShowModal(true)}>
-          <FaPlus style={{ marginRight: "8px" }} />
+          <FaPlusIcon style={{ marginRight: "8px" }} />
           Create New Board
         </button>
       </div>
