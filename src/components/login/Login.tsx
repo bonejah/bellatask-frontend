@@ -1,82 +1,45 @@
 import React, { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { loginUser } from "../../services/api"
+import { googleLoginUser } from "../../services/api"
+import { GoogleLogin } from '@react-oauth/google'
 
 const Login = () => {
   const navigate = useNavigate()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [error, setError] = useState("")
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleGoogleLogin = async (credentialResponse: any) => {
     try {
-      const response = await loginUser(email, password)
-      localStorage.setItem("token", response.token)
-      localStorage.setItem("refreshToken", response.refreshToken)
-      navigate("/boards")
+      if (credentialResponse.credential) {
+        const response = await googleLoginUser(credentialResponse.credential)
+        localStorage.setItem("token", response.token)
+        localStorage.setItem("refreshToken", response.refreshToken)
+        navigate("/boards")
+      }
     } catch (err) {
-      setError("Login failed. Please check your credentials.")
+      setError("Google Login failed. Please try again.")
     }
   }
 
   return (
-    <div className="d-flex justify-content-center align-items-center min-vh-100 bg-light">
-      <div className="bg-white p-4 rounded shadow-lg w-25">
-        <div className="d-flex flex-column align-items-center">
-          <img src="/bellatask-logo.png" alt="Logo" className="w-25 mb-3" />
-          <h2 className="h4 font-weight-bold">Log in to continue</h2>
-        </div>
+    <div className="login-page">
+      <div className="login-card">
+        <img src="/bellatask-logo.png" alt="Bella Task" className="login-logo" />
+        <h1 className="login-title">Welcome back</h1>
+        <p className="login-subtitle">Sign in to your Bella Task workspace</p>
 
-        <form onSubmit={handleLogin} className="mt-4">
-          <div className="form-group">
-            <label htmlFor="email" className="text-muted">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="example@email.com"
-              className="form-control"
-              required
-            />
-          </div>
+        {error && <div className="login-error">{error}</div>}
 
-          <div className="form-group mt-3">
-            <label htmlFor="password" className="text-muted">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="********"
-              className="form-control"
-              required
-            />
-          </div>
-
-          {error && <p className="text-danger mt-2">{error}</p>}
-
-          <div className="form-check mt-3">
-            <input type="checkbox" id="remember" className="form-check-input" />
-            <label htmlFor="remember" className="form-check-label text-muted">
-              Remember me
-            </label>
-          </div>
-
-          <button type="submit" className="btn btn-primary w-100 mt-4">
-            Continue
-          </button>
-        </form>
-
-        <div className="text-center mt-4">
-          <a href="/register" className="text-primary">
-            Create an account
-          </a>
+        <div className="login-google-wrapper">
+          <GoogleLogin
+            onSuccess={handleGoogleLogin}
+            onError={() => setError("Google Login Failed")}
+            useOneTap
+            shape="rectangular"
+            theme="filled_blue"
+            size="large"
+            text="continue_with"
+            width="340"
+          />
         </div>
       </div>
     </div>

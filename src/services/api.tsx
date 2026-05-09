@@ -22,6 +22,11 @@ export const loginUser = async (email: string, password: string) => {
   return response.data
 }
 
+export const googleLoginUser = async (token: string) => {
+  const response = await api.post("/users/google-login", { token })
+  return response.data
+}
+
 export const getProfile = async (token: string) => {
   const response = await api.get("/users/profile", {
     headers: {
@@ -204,3 +209,30 @@ export const updateCard = async (
   )
   return response.data
 }
+
+export const updateCardTitle = async (
+  token: string,
+  cardId: string,
+  name: string
+) => {
+  const response = await api.put(
+    `/cards/${cardId}`,
+    { name },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+  return response.data
+}
+
+export const deleteCard = async (token: string, cardId: string) => {
+  const response = await api.delete(`/cards/${cardId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+  return response.data
+}
+
