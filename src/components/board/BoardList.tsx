@@ -113,7 +113,7 @@ const BoardList = () => {
       {/* Navbar */}
       <nav className="app-navbar">
         <a className="navbar-brand" href="/boards">
-          <img src="/bellatask-logo.png" alt="Bella Task" />
+          <img src="/logo-bella.png" alt="Bella Task" />
           Bella Task
         </a>
         <div className="navbar-actions">
