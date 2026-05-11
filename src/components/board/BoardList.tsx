@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom"
 import { FaEdit, FaTrash, FaPlus, FaMoon, FaSun } from "react-icons/fa"
 import { useTheme } from "../../context/ThemeContext"
 import {
-  getBoardsByUserId,
+  getBoardsMe,
   getProfile,
   createBoard,
   updateBoard,
   deleteBoard,
+  logoutUser,
 } from "../../services/api"
-import { getUserIdFromToken } from "../../utils/auth"
 
 interface UserProfile {
   id: string
@@ -29,17 +29,23 @@ const BoardList = () => {
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null)
 
   useEffect(() => {
-    userProfile()
-    fetchBoards()
+    initData()
   }, [])
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeModal()
+  const initData = async () => {
+    setLoading(true)
+    try {
+      const profile = await getProfile()
+      setUser(profile)
+      const data = await getBoardsMe()
+      setBoards(data)
+    } catch (error) {
+      console.error(error)
+      navigate("/") // Redirect to login on auth failure
+    } finally {
+      setLoading(false)
     }
-    if (showModal) document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [showModal])
+  }
 
   const closeModal = () => {
     setShowModal(false)
@@ -48,39 +54,14 @@ const BoardList = () => {
     setDescription("")
   }
 
-  const userProfile = async () => {
+  const handleLogout = async () => {
     try {
-      const token = localStorage.getItem("token")
-      if (token) {
-        const profile = await getProfile(token)
-        setUser(profile)
-      }
+      await logoutUser()
+      navigate("/")
     } catch (error) {
-      console.error(error)
+      console.error("Logout failed:", error)
+      navigate("/")
     }
-  }
-
-  const fetchBoards = async () => {
-    try {
-      const token = localStorage.getItem("token")
-      if (token) {
-        const userId = getUserIdFromToken(token)
-        if (userId) {
-          const data = await getBoardsByUserId(token, userId)
-          setBoards(data)
-        }
-      }
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem("token")
-    localStorage.removeItem("refreshToken")
-    navigate("/")
   }
 
   const handleBoardClick = (board: any) => {
@@ -90,23 +71,20 @@ const BoardList = () => {
   const handleSaveBoard = async () => {
     if (!newBoardName.trim()) return
     try {
-      const token = localStorage.getItem("token")
-      if (token) {
-        if (editingBoardId) {
-          const response = await updateBoard(token, editingBoardId, newBoardName, description || "")
-          setBoards(boards.map((b) => (b._id === editingBoardId ? response.updatedBoard : b)))
-        } else {
-          const response = await createBoard(token, newBoardName, description || "")
-          setBoards([...boards, response.newBoard])
-        }
-        closeModal()
+      if (editingBoardId) {
+        const response = await updateBoard(editingBoardId, newBoardName, description || "")
+        setBoards(boards.map((b) => (b._id === editingBoardId ? response.updatedBoard : b)))
+      } else {
+        const response = await createBoard(newBoardName, description || "")
+        setBoards([...boards, response.newBoard])
       }
+      closeModal()
     } catch (error) {
       console.error("Error saving board:", error)
     }
   }
 
-  const handleEditBoard = (e: React.MouseEvent, board: any) => {
+  const handleStartEdit = (e: React.MouseEvent, board: any) => {
     e.stopPropagation()
     setEditingBoardId(board._id)
     setNewBoardName(board.name)
@@ -118,19 +96,17 @@ const BoardList = () => {
     e.stopPropagation()
     if (!window.confirm(`Delete "${board.name}"?`)) return
     try {
-      const token = localStorage.getItem("token")
-      if (token) {
-        await deleteBoard(token, board._id)
-        setBoards(boards.filter((b) => b._id !== board._id))
-      }
+      await deleteBoard(board._id)
+      setBoards(boards.filter((b) => b._id !== board._id))
     } catch (error) {
       console.error("Error deleting board:", error)
     }
   }
 
-  // Get initials for avatar
   const getInitials = (name: string) =>
     name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?"
+
+  if (loading) return <div className="loading-screen">Loading workspace...</div>
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-app)" }}>
@@ -166,67 +142,59 @@ const BoardList = () => {
           </div>
         </div>
 
-        {loading ? (
-          <div className="loading-wrapper">
-            <div className="spinner" />
-          </div>
-        ) : (
-          <div className="boards-grid">
-            {boards.map((board: any) => (
-              <div className="board-card" key={board._id}>
-                <div className="board-card-name">{board.name}</div>
-                <div className="board-card-desc">
-                  {board.description || "No description available."}
-                </div>
-                <div className="board-card-footer">
+        <div className="boards-grid">
+          {boards.map((board) => (
+            <div
+              key={board._id}
+              className="board-card"
+              onClick={() => handleBoardClick(board)}
+            >
+              <div className="board-card-content">
+                <h3 className="board-card-name">{board.name}</h3>
+                <p className="board-card-desc">{board.description}</p>
+              </div>
+              <div className="board-card-footer">
+                <button className="btn-open-board">
+                  Open →
+                </button>
+                <div className="board-card-actions">
                   <button
-                    className="btn-open-board"
-                    onClick={() => handleBoardClick(board)}
+                    className="btn-icon btn-icon-edit"
+                    onClick={(e) => handleStartEdit(e, board)}
                   >
-                    Open →
+                    <FaEdit size={12} />
                   </button>
-                  <div className="board-card-actions">
-                    <button
-                      className="btn-icon btn-icon-edit"
-                      title="Edit"
-                      onClick={(e) => handleEditBoard(e, board)}
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      className="btn-icon btn-icon-delete"
-                      title="Delete"
-                      onClick={(e) => handleDeleteBoard(e, board)}
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
+                  <button
+                    className="btn-icon btn-icon-delete"
+                    onClick={(e) => handleDeleteBoard(e, board)}
+                  >
+                    <FaTrash size={12} />
+                  </button>
                 </div>
               </div>
-            ))}
-
-            {/* New Board Card */}
-            <div className="board-card-new" onClick={() => setShowModal(true)}>
-              <div className="board-card-new-icon">
-                <FaPlus />
-              </div>
-              <span className="board-card-new-label">New Board</span>
             </div>
+          ))}
+
+          <div className="board-card-new" onClick={() => setShowModal(true)}>
+            <div className="board-card-new-icon">
+              <FaPlus />
+            </div>
+            <span className="board-card-new-label">New Board</span>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-title">
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <h2 className="modal-title">
               {editingBoardId ? "Edit Board" : "Create New Board"}
-            </div>
+            </h2>
             <input
               type="text"
               className="modal-input"
-              placeholder="Board name"
+              placeholder="Board Name"
               value={newBoardName}
               onChange={(e) => setNewBoardName(e.target.value)}
               autoFocus

@@ -1,18 +1,29 @@
 import React, { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { googleLoginUser } from "../../services/api"
+import { googleLoginUser, getProfile } from "../../services/api"
 import { GoogleLogin } from '@react-oauth/google'
 
 const Login = () => {
   const navigate = useNavigate()
   const [error, setError] = useState("")
 
+  React.useEffect(() => {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    try {
+      await getProfile()
+      navigate("/boards")
+    } catch (err) {
+      // Not logged in, stay on login page
+    }
+  }
+
   const handleGoogleLogin = async (credentialResponse: any) => {
     try {
       if (credentialResponse.credential) {
-        const response = await googleLoginUser(credentialResponse.credential)
-        localStorage.setItem("token", response.token)
-        localStorage.setItem("refreshToken", response.refreshToken)
+        await googleLoginUser(credentialResponse.credential)
         navigate("/boards")
       }
     } catch (err) {

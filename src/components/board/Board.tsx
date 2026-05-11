@@ -41,7 +41,7 @@ const Board = () => {
   const [tempEditCardName, setTempEditCardName] = useState<string>("")
 
   useEffect(() => {
-    fetchLists()
+    if (boardId) fetchLists()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId])
 
@@ -64,13 +64,12 @@ const Board = () => {
 
   const fetchLists = async () => {
     try {
-      const token = localStorage.getItem("token")
-      if (token && boardId) {
-        const data = await getListsByBoardId(boardId, token)
+      if (boardId) {
+        const data = await getListsByBoardId(boardId)
         setLists(data)
 
         const cardsResults = await Promise.allSettled(
-          data.map((list: any) => getCardsByListId(list._id, token))
+          data.map((list: any) => getCardsByListId(list._id))
         )
 
         const newCardsByList: { [key: string]: any[] } = {}
@@ -83,25 +82,23 @@ const Board = () => {
       }
     } catch (err: any) {
       console.error(err.message)
+      if (err.response?.status === 401) navigate("/")
     } finally {
       setLoading(false)
     }
   }
 
   const handleSaveList = async () => {
-    if (!newListName.trim()) return
+    if (!newListName.trim() || !boardId) return
     try {
-      const token = localStorage.getItem("token")
-      if (token) {
-        if (editingListId) {
-          const response = await updateList(token, editingListId, newListName, description || "")
-          setLists(lists.map((l) => (l._id === editingListId ? response.updatedList : l)))
-        } else {
-          const response = await createList(token, newListName, description || "", board._id)
-          setLists([...lists, response.newList])
-        }
-        closeModal()
+      if (editingListId) {
+        const response = await updateList(editingListId, newListName, description || "")
+        setLists(lists.map((l) => (l._id === editingListId ? response.updatedList : l)))
+      } else {
+        const response = await createList(newListName, description || "", boardId)
+        setLists([...lists, response.newList])
       }
+      closeModal()
     } catch (error) {
       console.error("Error saving list:", error)
     }
@@ -119,11 +116,8 @@ const Board = () => {
     e.stopPropagation()
     if (!window.confirm(`Delete list "${list.name}"?`)) return
     try {
-      const token = localStorage.getItem("token")
-      if (token) {
-        await deleteList(token, list._id)
-        setLists(lists.filter((l) => l._id !== list._id))
-      }
+      await deleteList(list._id)
+      setLists(lists.filter((l) => l._id !== list._id))
     } catch (error) {
       console.error("Error deleting list:", error)
     }
@@ -132,20 +126,17 @@ const Board = () => {
   const handleCardKeyDown = async (
     e: React.KeyboardEvent<HTMLInputElement>,
     listId: string,
-    boardId: string
+    bId: string
   ) => {
     if (e.key === "Enter") {
       const name = newCardName[listId]
       if (!name?.trim()) return
       try {
-        const token = localStorage.getItem("token")
-        if (token) {
-          const response = await createCard(token, listId, boardId, name)
-          setCardsByList((prev) => ({
-            ...prev,
-            [listId]: [...(prev[listId] || []), response.newCard],
-          }))
-        }
+        const response = await createCard(listId, bId, name)
+        setCardsByList((prev) => ({
+          ...prev,
+          [listId]: [...(prev[listId] || []), response.newCard],
+        }))
         setNewCardName((prev) => ({ ...prev, [listId]: "" }))
         setShowInputField((prev) => ({ ...prev, [listId]: false }))
       } catch (error) {
@@ -161,14 +152,11 @@ const Board = () => {
     e.stopPropagation()
     if (!window.confirm("Are you sure you want to delete this card?")) return
     try {
-      const token = localStorage.getItem("token")
-      if (token) {
-        await deleteCard(token, cardId)
-        setCardsByList((prev) => ({
-          ...prev,
-          [listId]: prev[listId].filter((c) => c._id !== cardId),
-        }))
-      }
+      await deleteCard(cardId)
+      setCardsByList((prev) => ({
+        ...prev,
+        [listId]: prev[listId].filter((c) => c._id !== cardId),
+      }))
     } catch (error) {
       console.error("Error deleting card:", error)
     }
@@ -184,15 +172,12 @@ const Board = () => {
     if (e.key === "Enter") {
       if (!tempEditCardName.trim()) return
       try {
-        const token = localStorage.getItem("token")
-        if (token) {
-          await updateCardTitle(token, cardId, tempEditCardName)
-          setCardsByList((prev) => ({
-            ...prev,
-            [listId]: prev[listId].map((c) => (c._id === cardId ? { ...c, name: tempEditCardName, title: tempEditCardName } : c)),
-          }))
-          setEditingCardId(null)
-        }
+        await updateCardTitle(cardId, tempEditCardName)
+        setCardsByList((prev) => ({
+          ...prev,
+          [listId]: prev[listId].map((c) => (c._id === cardId ? { ...c, name: tempEditCardName, title: tempEditCardName } : c)),
+        }))
+        setEditingCardId(null)
       } catch (error) {
         console.error("Error updating card:", error)
       }
@@ -227,8 +212,7 @@ const Board = () => {
     })
 
     try {
-      const token = localStorage.getItem("token")
-      if (token) await updateCardList(token, removed._id, destination.droppableId)
+      await updateCardList(removed._id, destination.droppableId)
     } catch (error) {
       console.error("Error updating card position:", error)
       fetchLists()
@@ -386,7 +370,7 @@ const Board = () => {
                                     }))
                                   }
                                   onKeyDown={(e) =>
-                                    handleCardKeyDown(e, list._id, board._id)
+                                    handleCardKeyDown(e, list._id, boardId!)
                                   }
                                 />
                               ) : (
