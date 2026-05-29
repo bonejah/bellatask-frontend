@@ -9,20 +9,6 @@ const api = axios.create({
 })
 
 // User
-export const registerUser = async (
-  name: string,
-  email: string,
-  password: string
-) => {
-  const response = await api.post("/users/register", { name, email, password })
-  return response.data
-}
-
-export const loginUser = async (email: string, password: string) => {
-  const response = await api.post("/users/login", { email, password })
-  return response.data
-}
-
 export const googleLoginUser = async (token: string) => {
   const response = await api.post("/users/google-login", { token })
   return response.data

@@ -12,6 +12,7 @@ import {
   updateCardList,
   deleteCard,
   updateCardTitle,
+  updateCard,
 } from "../../services/api"
 import {
   DragDropContext,
@@ -40,6 +41,12 @@ const Board = () => {
   const [editingCardId, setEditingCardId] = useState<string | null>(null)
   const [tempEditCardName, setTempEditCardName] = useState<string>("")
 
+  // Card details modal state
+  const [showCardModal, setShowCardModal] = useState<boolean>(false)
+  const [selectedCard, setSelectedCard] = useState<any>(null)
+  const [cardModalName, setCardModalName] = useState<string>("")
+  const [cardModalDesc, setCardModalDesc] = useState<string>("")
+
   useEffect(() => {
     if (boardId) fetchLists()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -47,11 +54,14 @@ const Board = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeModal()
+      if (e.key === "Escape") {
+        closeModal()
+        closeCardModal()
+      }
     }
-    if (showModal) document.addEventListener("keydown", handleKeyDown)
+    if (showModal || showCardModal) document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [showModal])
+  }, [showModal, showCardModal])
 
   const closeModal = () => {
     setShowModal(false)
@@ -60,6 +70,13 @@ const Board = () => {
     setDescription("")
     setShowInputField({})
     setNewCardName({})
+  }
+
+  const closeCardModal = () => {
+    setShowCardModal(false)
+    setSelectedCard(null)
+    setCardModalName("")
+    setCardModalDesc("")
   }
 
   const fetchLists = async () => {
@@ -164,8 +181,7 @@ const Board = () => {
 
   const handleStartEditCard = (e: React.MouseEvent, card: any) => {
     e.stopPropagation()
-    setEditingCardId(card._id)
-    setTempEditCardName(card.name || card.title)
+    handleOpenCardModal(card)
   }
 
   const handleUpdateCardName = async (e: React.KeyboardEvent<HTMLInputElement>, cardId: string, listId: string) => {
@@ -184,6 +200,39 @@ const Board = () => {
     }
     if (e.key === "Escape") {
       setEditingCardId(null)
+    }
+  }
+
+  const handleOpenCardModal = (card: any) => {
+    setSelectedCard(card)
+    setCardModalName(card.name || card.title)
+    setCardModalDesc(card.description || "")
+    setShowCardModal(true)
+  }
+
+  const handleSaveCardDetails = async () => {
+    if (!selectedCard || !cardModalName.trim()) return
+    try {
+      await updateCard(
+        selectedCard._id,
+        cardModalName,
+        cardModalDesc,
+        selectedCard.assignee || "",
+        selectedCard.dueDate || ""
+      )
+      
+      const listId = selectedCard.list
+      setCardsByList((prev) => ({
+        ...prev,
+        [listId]: prev[listId].map((c) =>
+          c._id === selectedCard._id
+            ? { ...c, name: cardModalName, title: cardModalName, description: cardModalDesc }
+            : c
+        ),
+      }))
+      closeCardModal()
+    } catch (error) {
+      console.error("Error saving card details:", error)
     }
   }
 
@@ -314,6 +363,7 @@ const Board = () => {
                                           {...provided.dragHandleProps}
                                           className="kanban-card"
                                           style={provided.draggableProps.style}
+                                          onClick={() => handleOpenCardModal(card)}
                                         >
                                           {editingCardId === card._id ? (
                                             <input
@@ -326,7 +376,10 @@ const Board = () => {
                                             />
                                           ) : (
                                             <>
-                                              <span className="kanban-card-title">{card.title || card.name}</span>
+                                              <div className="kanban-card-title">{card.title || card.name}</div>
+                                              {card.description && (
+                                                <div className="kanban-card-desc-preview">{card.description}</div>
+                                              )}
                                               <div className="kanban-card-actions">
                                                 <button
                                                   className="kanban-card-btn kanban-card-btn-edit"
@@ -437,6 +490,46 @@ const Board = () => {
                 disabled={!newListName.trim()}
               >
                 {editingListId ? "Save Changes" : "Create List"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Card Details Modal */}
+      {showCardModal && selectedCard && (
+        <div className="modal-overlay" onClick={closeCardModal}>
+          <div className="modal-box card-details-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-title">Card Details</div>
+            
+            <label className="modal-label">Title</label>
+            <input
+              type="text"
+              className="modal-input"
+              placeholder="Card title"
+              value={cardModalName}
+              onChange={(e) => setCardModalName(e.target.value)}
+              autoFocus
+            />
+            
+            <label className="modal-label">Description</label>
+            <textarea
+              className="modal-textarea"
+              placeholder="Add a detailed description here..."
+              value={cardModalDesc}
+              onChange={(e) => setCardModalDesc(e.target.value)}
+            />
+            
+            <div className="modal-footer-btns">
+              <button className="btn-secondary-modal" onClick={closeCardModal}>
+                Cancel
+              </button>
+              <button
+                className="btn-primary-modal"
+                onClick={handleSaveCardDetails}
+                disabled={!cardModalName.trim()}
+              >
+                Save Details
               </button>
             </div>
           </div>
