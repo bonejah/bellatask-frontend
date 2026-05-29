@@ -34,7 +34,7 @@ const Login = () => {
   return (
     <div className="login-page">
       <div className="login-card">
-        <img src="/bellatask-logo.png" alt="Bella Task" className="login-logo" />
+        <img src="/logo-bella.png" alt="Bella Task" className="login-logo" />
         <h1 className="login-title">Welcome back</h1>
         <p className="login-subtitle">Sign in to your Bella Task workspace</p>
 
