@@ -46,6 +46,7 @@ const Board = () => {
   const [selectedCard, setSelectedCard] = useState<any>(null)
   const [cardModalName, setCardModalName] = useState<string>("")
   const [cardModalDesc, setCardModalDesc] = useState<string>("")
+  const [cardMoveToList, setCardMoveToList] = useState<string>("")
 
   useEffect(() => {
     if (boardId) fetchLists()
@@ -207,6 +208,7 @@ const Board = () => {
     setSelectedCard(card)
     setCardModalName(card.name || card.title)
     setCardModalDesc(card.description || "")
+    setCardMoveToList("")
     setShowCardModal(true)
   }
 
@@ -233,6 +235,23 @@ const Board = () => {
       closeCardModal()
     } catch (error) {
       console.error("Error saving card details:", error)
+    }
+  }
+
+  const handleMoveCard = async (targetListId: string) => {
+    if (!selectedCard || !targetListId || targetListId === selectedCard.list) return
+    try {
+      await updateCardList(selectedCard._id, targetListId)
+      const sourceListId = selectedCard.list
+      const movedCard = { ...selectedCard, list: targetListId }
+      setCardsByList((prev) => {
+        const sourceCards = (prev[sourceListId] || []).filter((c) => c._id !== selectedCard._id)
+        const destCards = [...(prev[targetListId] || []), movedCard]
+        return { ...prev, [sourceListId]: sourceCards, [targetListId]: destCards }
+      })
+      closeCardModal()
+    } catch (error) {
+      console.error("Error moving card:", error)
     }
   }
 
@@ -501,7 +520,7 @@ const Board = () => {
         <div className="modal-overlay" onClick={closeCardModal}>
           <div className="modal-box card-details-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-title">Card Details</div>
-            
+
             <label className="modal-label">Title</label>
             <input
               type="text"
@@ -511,7 +530,7 @@ const Board = () => {
               onChange={(e) => setCardModalName(e.target.value)}
               autoFocus
             />
-            
+
             <label className="modal-label">Description</label>
             <textarea
               className="modal-textarea"
@@ -519,7 +538,30 @@ const Board = () => {
               value={cardModalDesc}
               onChange={(e) => setCardModalDesc(e.target.value)}
             />
-            
+
+            <label className="modal-label">Move to List</label>
+            <div className="modal-move-row">
+              <select
+                className="modal-select"
+                value={cardMoveToList}
+                onChange={(e) => setCardMoveToList(e.target.value)}
+              >
+                <option value="">— Select a list —</option>
+                {lists
+                  .filter((l) => l._id !== selectedCard.list)
+                  .map((l) => (
+                    <option key={l._id} value={l._id}>{l.name}</option>
+                  ))}
+              </select>
+              <button
+                className="btn-move-card"
+                onClick={() => handleMoveCard(cardMoveToList)}
+                disabled={!cardMoveToList}
+              >
+                Move
+              </button>
+            </div>
+
             <div className="modal-footer-btns">
               <button className="btn-secondary-modal" onClick={closeCardModal}>
                 Cancel
