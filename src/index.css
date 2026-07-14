@@ -778,7 +778,7 @@ body {
   overflow-y: hidden;
   padding: 24px;
   display: flex;
-  background: var(--bg-app);
+  background: transparent;
   align-items: flex-start;
 }
 
