@@ -13,6 +13,7 @@ import {
   deleteCard,
   updateCardTitle,
   updateCard,
+  getBoardById,
 } from "../../services/api"
 import {
   DragDropContext,
@@ -26,7 +27,7 @@ const Board = () => {
   const { boardId } = useParams<{ boardId: string }>()
   const navigate = useNavigate()
   const location = useLocation()
-  const board = location.state?.board
+  const [board, setBoard] = useState<any>(location.state?.board || null)
   const { theme, toggleTheme } = useTheme()
 
   const [lists, setLists] = useState<any[]>([])
@@ -49,9 +50,25 @@ const Board = () => {
   const [cardMoveToList, setCardMoveToList] = useState<string>("")
 
   useEffect(() => {
-    if (boardId) fetchLists()
+    if (boardId) {
+      fetchLists()
+      if (!board) {
+        fetchBoardDetails()
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId])
+
+  const fetchBoardDetails = async () => {
+    try {
+      if (boardId) {
+        const boardData = await getBoardById(boardId)
+        setBoard(boardData)
+      }
+    } catch (error) {
+      console.error("Failed to fetch board details", error)
+    }
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -288,7 +305,12 @@ const Board = () => {
   }
 
   return (
-    <div className="board-view">
+    <div className="board-view" style={{
+      backgroundImage: board?.backgroundPhoto ? `url(${board.backgroundPhoto})` : undefined,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat"
+    }}>
       {/* Top bar */}
       <div className="board-topbar">
         <button className="board-back-btn" onClick={() => navigate("/boards")}>

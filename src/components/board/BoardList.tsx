@@ -26,6 +26,7 @@ const BoardList = () => {
   const [showModal, setShowModal] = useState<boolean>(false)
   const [newBoardName, setNewBoardName] = useState<string>("")
   const [description, setDescription] = useState<string>("")
+  const [backgroundPhoto, setBackgroundPhoto] = useState<string>("")
   const [editingBoardId, setEditingBoardId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -52,6 +53,7 @@ const BoardList = () => {
     setEditingBoardId(null)
     setNewBoardName("")
     setDescription("")
+    setBackgroundPhoto("")
   }
 
   const handleLogout = async () => {
@@ -72,10 +74,10 @@ const BoardList = () => {
     if (!newBoardName.trim()) return
     try {
       if (editingBoardId) {
-        const response = await updateBoard(editingBoardId, newBoardName, description || "")
+        const response = await updateBoard(editingBoardId, newBoardName, description || "", backgroundPhoto || undefined)
         setBoards(boards.map((b) => (b._id === editingBoardId ? response.updatedBoard : b)))
       } else {
-        const response = await createBoard(newBoardName, description || "")
+        const response = await createBoard(newBoardName, description || "", backgroundPhoto || undefined)
         setBoards([...boards, response.newBoard])
       }
       closeModal()
@@ -89,6 +91,7 @@ const BoardList = () => {
     setEditingBoardId(board._id)
     setNewBoardName(board.name)
     setDescription(board.description || "")
+    setBackgroundPhoto(board.backgroundPhoto || "")
     setShowModal(true)
   }
 
@@ -148,10 +151,15 @@ const BoardList = () => {
               key={board._id}
               className="board-card"
               onClick={() => handleBoardClick(board)}
+              style={board.backgroundPhoto ? {
+                backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${board.backgroundPhoto})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center"
+              } : undefined}
             >
               <div className="board-card-content">
-                <h3 className="board-card-name">{board.name}</h3>
-                <p className="board-card-desc">{board.description}</p>
+                <h3 className="board-card-name" style={board.backgroundPhoto ? {color: 'white'} : {}}>{board.name}</h3>
+                <p className="board-card-desc" style={board.backgroundPhoto ? {color: '#e5e7eb'} : {}}>{board.description}</p>
               </div>
               <div className="board-card-footer">
                 <button className="btn-open-board">
@@ -205,6 +213,13 @@ const BoardList = () => {
               placeholder="Description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+            />
+            <input
+              type="text"
+              className="modal-input"
+              placeholder="Background Photo URL (optional)"
+              value={backgroundPhoto}
+              onChange={(e) => setBackgroundPhoto(e.target.value)}
             />
             <div className="modal-footer-btns">
               <button className="btn-secondary-modal" onClick={closeModal}>
