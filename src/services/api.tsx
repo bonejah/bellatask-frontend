@@ -98,6 +98,11 @@ export const deleteList = async (listId: string) => {
   return response.data
 }
 
+export const reorderLists = async (boardId: string, listIds: string[]) => {
+  const response = await api.put(`/list/reorder/${boardId}`, { listIds })
+  return response.data
+}
+
 // Card
 export const createCard = async (
   listId: string,
@@ -137,5 +142,10 @@ export const updateCardTitle = async (
 
 export const deleteCard = async (cardId: string) => {
   const response = await api.delete(`/cards/${cardId}`)
+  return response.data
+}
+
+export const reorderCards = async (listId: string, cardIds: string[]) => {
+  const response = await api.put(`/cards/reorder/${listId}`, { cardIds })
   return response.data
 }

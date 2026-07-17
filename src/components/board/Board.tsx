@@ -14,6 +14,8 @@ import {
   updateCardTitle,
   updateCard,
   getBoardById,
+  reorderCards,
+  reorderLists,
 } from "../../services/api"
 import {
   DragDropContext,
@@ -282,25 +284,59 @@ const Board = () => {
       const [removed] = reordered.splice(source.index, 1)
       reordered.splice(destination.index, 0, removed)
       setLists(reordered)
+
+      try {
+        if (boardId) {
+          const listIds = reordered.map((l) => l._id)
+          await reorderLists(boardId, listIds)
+        }
+      } catch (error) {
+        console.error("Error updating list order:", error)
+        fetchLists()
+      }
       return
     }
 
-    const sourceCards = Array.from(cardsByList[source.droppableId] || [])
-    const destCards = Array.from(cardsByList[destination.droppableId] || [])
-    const [removed] = sourceCards.splice(source.index, 1)
-    destCards.splice(destination.index, 0, removed)
+    if (source.droppableId === destination.droppableId) {
+      const reorderedCards = Array.from(cardsByList[source.droppableId] || [])
+      const [removed] = reorderedCards.splice(source.index, 1)
+      reorderedCards.splice(destination.index, 0, removed)
 
-    setCardsByList({
-      ...cardsByList,
-      [source.droppableId]: sourceCards,
-      [destination.droppableId]: destCards,
-    })
+      setCardsByList({
+        ...cardsByList,
+        [source.droppableId]: reorderedCards,
+      })
 
-    try {
-      await updateCardList(removed._id, destination.droppableId)
-    } catch (error) {
-      console.error("Error updating card position:", error)
-      fetchLists()
+      try {
+        const cardIds = reorderedCards.map((c) => c._id)
+        await reorderCards(source.droppableId, cardIds)
+      } catch (error) {
+        console.error("Error updating card order within list:", error)
+        fetchLists()
+      }
+    } else {
+      const sourceCards = Array.from(cardsByList[source.droppableId] || [])
+      const destCards = Array.from(cardsByList[destination.droppableId] || [])
+      const [removed] = sourceCards.splice(source.index, 1)
+      destCards.splice(destination.index, 0, removed)
+
+      setCardsByList({
+        ...cardsByList,
+        [source.droppableId]: sourceCards,
+        [destination.droppableId]: destCards,
+      })
+
+      try {
+        const destCardIds = destCards.map((c) => c._id)
+        const srcCardIds = sourceCards.map((c) => c._id)
+        await Promise.all([
+          reorderCards(destination.droppableId, destCardIds),
+          reorderCards(source.droppableId, srcCardIds),
+        ])
+      } catch (error) {
+        console.error("Error updating card position across lists:", error)
+        fetchLists()
+      }
     }
   }
 
